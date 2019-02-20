@@ -2,12 +2,16 @@
 #include <SFML/OpenGL.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui-SFML.h>
 
 #include <iostream>
 
+#include "synth.h"
+
 int main()
 {
+    synth_init();
     // create the window
     sf::ContextSettings settings;
     settings.depthBits = 24;
@@ -21,8 +25,9 @@ int main()
     settings.attributeFlags |= settings.Debug;
 #endif
 
-
-    sf::RenderWindow window(sf::VideoMode(800, 600), "OpenGL", sf::Style::Default, settings);
+    unsigned int windowWidth = 800;
+    unsigned int windowHeight = 600;
+    sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "OpenGL", sf::Style::Default, settings);
     window.setVerticalSyncEnabled(true);
     window.setFramerateLimit(60);
 
@@ -35,6 +40,7 @@ int main()
     // run the main loop
     bool running = true;
     sf::Vector3f clear_color;
+    ADSR adsr = { .001f, 1.0f, 1.0f, 0.0f };
 
     while (running)
     {
@@ -52,55 +58,63 @@ int main()
             else if (event.type == sf::Event::Resized)
             {
                 // adjust the viewport when the window is resized
+                windowWidth = event.size.width;
+                windowHeight = event.size.height;
                 glViewport(0, 0, event.size.width, event.size.height);
             }
         }
        
         ImGui::SFML::Update(window, deltaClock.restart());
-       
+
+        ImGui::SetNextWindowSize(ImVec2(static_cast<float>(windowWidth), static_cast<float>(windowHeight)));
+        ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
         {
-            ImGui::Begin("Hello, world!");
-            if (ImGui::Button("Look at this pretty button"))
+            ImGuiWindowFlags flags = 0;
+            flags |= ImGuiWindowFlags_NoDecoration;
+            flags |= ImGuiWindowFlags_NoMove;
+            flags |= ImGuiWindowFlags_NoScrollWithMouse;
+            flags |= ImGuiWindowFlags_NoBackground;
+            ImGui::Begin("Main", nullptr, flags);
+
+            if (ImGui::Button("Play"))
             {
-                std::cout << "button clicked" << std::endl;
+                synth_play();
             }
-            ImGui::End();
-        }
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-            bool show_demo_window;
-            bool show_another_window;
-
-
-            ImGuiIO& io = ImGui::GetIO();
-            io.MouseClickedPos;
-
-            ImGui::Begin("Hello again, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            const float values[] = { 0.2f, 0.0f, 0.4f, 0.5f };
-            ImVec2 mousePosRel;
-            bool mouseDown;
-            ImGui::PlotLines("Lines", values, 4, 0, "yadayada", 0.0f, 1.0f, ImVec2(100.0f, 100.0f), 4, &mousePosRel, &mouseDown);
-            if (mouseDown)
             {
-                std::cout << mousePosRel.x << " " << mousePosRel.y << std::endl;
-            }
-            ImGui::PlotHistogram("Hist", values, 4, 0, "yadayada", 0.0f, 1.0f, ImVec2(100.0f, 100.0f));
+                ImGui::BeginChild("stuff", ImVec2(200.0f, 0.0f), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysUseWindowPadding);
+                
+                ImGui::Text("Envelope");                
 
-            //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+                bool adsrChanged = false;
+                adsrChanged |= ImGui::VSliderFloat("##attack", ImVec2(20.0f, 100.0f), &adsr.a, 0.0f, 1.0f);
+                ImGui::SameLine();
+                adsrChanged |= ImGui::VSliderFloat("##decay", ImVec2(20.0f, 100.0f), &adsr.d, 0.0f, 1.0f);
+                ImGui::SameLine();
+                adsrChanged |= ImGui::VSliderFloat("##sustain", ImVec2(20.0f, 100.0f), &adsr.s, 0.0f, 1.0f);
+                ImGui::SameLine();
+                adsrChanged |= ImGui::VSliderFloat("##release", ImVec2(20.0f, 100.0f), &adsr.r, 0.0f, 1.0f);
+
+                if (adsrChanged)
+                {
+                    synth_generate(adsr);
+                }
+                
+                ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+                //const float values[] = { 0.2f, 0.0f, 0.4f, 0.5f };
+                //ImVec2 mousePosRel;
+                //bool mouseDown;
+                //ImGui::PlotLines("Lines", values, 4, 0, "yadayada", 0.0f, 1.0f, ImVec2(0.0f, 100.0f), 4, &mousePosRel, &mouseDown);
+                //if (mouseDown)
+                //{
+                //    std::cout << mousePosRel.x << " " << mousePosRel.y << std::endl;
+                //}
+                //ImGui::PlotHistogram("Hist", values, 4, 0, "yadayada", 0.0f, 1.0f, ImVec2(0.0f, 100.0f));
+
+                //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+                ImGui::EndChild();
+            }
+
             ImGui::End();
         }
 
@@ -108,6 +122,7 @@ int main()
         // clear the buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        //ImGui::ShowDemoWindow();
         //window.draw(shape);
         ImGui::SFML::Render(window);
 
