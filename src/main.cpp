@@ -40,7 +40,7 @@ int main()
     // run the main loop
     bool running = true;
     sf::Vector3f clear_color;
-    ADSR adsr = { .001f, 1.0f, 1.0f, 0.0f };
+    ADSR adsr = { .001f, 0.001f, 1.0f, 0.95f };
     synth_generate(adsr);
 
     while (running)
