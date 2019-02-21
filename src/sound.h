@@ -8,6 +8,7 @@ struct ADSR
     float r;
 };
 
-void synth_init();
-void synth_generate(ADSR adsr);
-void synth_play();
+void sound_init();
+void sound_deinit();
+void sound_generate(ADSR adsr);
+void sound_play();

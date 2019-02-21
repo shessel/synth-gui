@@ -7,11 +7,11 @@
 
 #include <iostream>
 
-#include "synth.h"
+#include "sound.h"
 
 int main()
 {
-    synth_init();
+    sound_init();
     // create the window
     sf::ContextSettings settings;
     settings.depthBits = 24;
@@ -41,6 +41,7 @@ int main()
     bool running = true;
     sf::Vector3f clear_color;
     ADSR adsr = { .001f, 1.0f, 1.0f, 0.0f };
+    sound_generate(adsr);
 
     while (running)
     {
@@ -78,7 +79,7 @@ int main()
 
             if (ImGui::Button("Play"))
             {
-                synth_play();
+                sound_play();
             }
             {
                 ImGui::BeginChild("stuff", ImVec2(200.0f, 0.0f), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysUseWindowPadding);
@@ -96,7 +97,7 @@ int main()
 
                 if (adsrChanged)
                 {
-                    synth_generate(adsr);
+                    sound_generate(adsr);
                 }
                 
                 ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
@@ -131,6 +132,7 @@ int main()
     }
 
     // release resources...
+    sound_deinit();
 
     return 0;
 }

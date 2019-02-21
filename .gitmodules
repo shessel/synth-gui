@@ -4,3 +4,6 @@
 [submodule "imgui-sfml"]
 	path = imgui-sfml
 	url = https://github.com/eliasdaler/imgui-sfml
+[submodule "synth"]
+	path = synth
+	url = https://github.com/shessel/synth

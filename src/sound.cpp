@@ -1,3 +1,5 @@
+#include "sound.h"
+
 #include "synth.h"
 
 #include <cstdint>
@@ -166,69 +168,21 @@ float kick(float t, float /*startFreq*/)
     return 1.0f * (lowBoom + punch + slap);
 }
 
-std::deque<WAVEHDR> hdrs;
-
-LPSTR current_buffer = nullptr;
-HWAVEOUT hwo = 0;
-void CALLBACK waveOutProc(
-    HWAVEOUT  hwoo,
-    UINT      uMsg,
-    DWORD_PTR dwInstance,
-    DWORD_PTR dwParam1,
-    DWORD_PTR dwParam2
-    ) {
-    switch (uMsg)
-    {
-    case WOM_CLOSE:
-        uMsg *= 1;
-        break;
-    case WOM_OPEN:
-        uMsg *= 1;
-        break;
-    case WOM_DONE:
-        if (!hdrs.empty()) {
-            WAVEHDR& hdr = hdrs.front();
-            waveOutUnprepareHeader(hwo, &hdr, sizeof(WAVEHDR));
-            hdrs.pop_front();
-        }
-        uMsg *= 1;
-        break;
-    default:
-        uMsg *= 1;
-        uMsg;
-    }
-    hwoo;
-    uMsg;
-    dwInstance;
-    dwParam1;
-    dwParam2;
-};
-
-void synth_init()
+void sound_init()
 {
     initNoiseBuffer();
-    WAVEFORMATEX fmt{};
-    fmt.wBitsPerSample = 16;
-    fmt.wFormatTag = WAVE_FORMAT_PCM;
-    fmt.nChannels = NUM_CHANNELS;
-    fmt.nSamplesPerSec = SAMPLE_RATE;
-    fmt.nAvgBytesPerSec = SAMPLE_RATE * NUM_CHANNELS * BYTE_PER_SAMPLE;
-    fmt.nBlockAlign = NUM_CHANNELS * BYTE_PER_SAMPLE;
-
-    synth_generate({ 0.01f, 0.2f, 1.0f, 0.0f });
-    waveOutOpen(&hwo, WAVE_MAPPER, &fmt, (DWORD_PTR) &waveOutProc, NULL, CALLBACK_FUNCTION);
-    //waveOutClose(hwo);
+    open_device(NUM_CHANNELS, SAMPLE_RATE, BYTE_PER_SAMPLE);
 }
 
-int16_t* buffer;
-
-void synth_generate(ADSR adsr)
+void sound_deinit()
 {
-    if (!buffer) {
-        buffer = new int16_t[BUFFER_COUNT];
-    }
-    //memcpy(buffer, WAV_HEADER, 44);
+    close_device();
+}
 
+int16_t buffer[BUFFER_COUNT];
+
+void sound_generate(ADSR adsr)
+{
     float frequency = 440.0;
     float dummy;
     for (size_t i = SAMPLE_OFFSET; i < BUFFER_COUNT; ++i) {
@@ -252,43 +206,9 @@ void synth_generate(ADSR adsr)
         buffer[i] = static_cast<int16_t>(sample * 32767);
         clamp(buffer[i], int16_t(-32767), int16_t(32767));
     }
-
-    current_buffer = reinterpret_cast<LPSTR>(buffer);
 }
 
-void synth_play()
+void sound_play()
 {
-    hdrs.emplace_back();
-    WAVEHDR& hdr = hdrs.back();// { current_buffer, BUFFER_COUNT / 8, 0, 0, 0, 0, 0, 0 };
-    hdr.dwLoops = static_cast<DWORD>(-1);
-    hdr.lpData = current_buffer;
-    hdr.dwBufferLength = BUFFER_COUNT*sizeof(int16_t);
-    hdr.dwFlags = WHDR_BEGINLOOP | WHDR_ENDLOOP;
-    waveOutPrepareHeader(hwo, &hdr, sizeof(WAVEHDR));
-    //res *= 1;
-    //
-    //char* test = new char[hdr.dwBufferLength];
-    //memcpy(test, current_buffer, hdr.dwBufferLength);
-    //delete[] test;
-    //
-    //while ((hdr.dwFlags & WHDR_PREPARED) == 0)
-    //    Sleep(10);
-    //
-    waveOutWrite(hwo, &hdr, sizeof(WAVEHDR));
-    //waveOutUnprepareHeader(hwo, &hdr, sizeof(WAVEHDR));
-
-    //WAVEHDR header = { current_buffer, BUFFER_COUNT * 2, 0, 0, 0, 0, 0, 0 };
-    //waveOutPrepareHeader(hwo, &header, sizeof(WAVEHDR));
-    //waveOutWrite(hwo, &header, sizeof(WAVEHDR));
-    //static bool play = true;
-    //if (play)
-    //{
-    //    PlaySound(current_buffer, nullptr, SND_MEMORY | SND_ASYNC | SND_LOOP);
-    //    play = false;
-    //}
-    //else
-    //{
-    //    PlaySound(nullptr, nullptr, SND_MEMORY | SND_ASYNC | SND_LOOP);
-    //    play = true;
-    //}
+    play_sound(buffer, BUFFER_COUNT * 2);
 }
