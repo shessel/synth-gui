@@ -5,11 +5,9 @@ find_package(SFML 2.5 REQUIRED COMPONENTS graphics)
 
 set(SOURCE_FILES
 		main.cpp
-		sound.cpp
 	)
 
 set(HEADER_FILES
-		sound.h
 	)
 
 add_executable(sfml-synth ${SOURCE_FILES} ${HEADER_FILES})
