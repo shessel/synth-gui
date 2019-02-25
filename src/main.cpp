@@ -15,6 +15,8 @@ void imgui_sound_desc()
         0,              // base_sound_id
         1.0f,           // amplitude
         440.0f,         // frequency
+        0.0f,           // amplitude_min
+        30.0f,          // frequency_min
         0,              // frequency_modifier_id
         0,              // amplitude_modifier_id
         { 0.0f, 1.0f }, // frequency_modifier_params
@@ -29,6 +31,9 @@ void imgui_sound_desc()
     ImGui::Text("Frequency");
     ImGui::SameLine();
     sound_desc_changed |= ImGui::InputFloat("##frequency", &desc.frequency);
+    ImGui::Text("Frequency Min");
+    ImGui::SameLine();
+    sound_desc_changed |= ImGui::InputFloat("##frequency_min", &desc.frequency_min);
     int frequency_modifier_id = desc.frequency_modifier_id;
     sound_desc_changed |= ImGui::InputInt("##frequency_modifier_id", &frequency_modifier_id);
     desc.frequency_modifier_id = static_cast<uint8_t>(frequency_modifier_id);
@@ -38,6 +43,9 @@ void imgui_sound_desc()
     ImGui::Text("Amplitude");
     ImGui::SameLine();
     sound_desc_changed |= ImGui::InputFloat("##amplitude", &desc.amplitude);
+    ImGui::Text("Amplitude Min");
+    ImGui::SameLine();
+    sound_desc_changed |= ImGui::InputFloat("##amplitude_min", &desc.amplitude_min);
     int amplitude_modifier_id = desc.amplitude_modifier_id;
     sound_desc_changed |= ImGui::InputInt("##amplitude_modifier_id", &amplitude_modifier_id);
     desc.amplitude_modifier_id = static_cast<uint8_t>(amplitude_modifier_id);
