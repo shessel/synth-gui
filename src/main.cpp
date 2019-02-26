@@ -11,6 +11,7 @@
 
 void imgui_sound_desc()
 {
+    static bool loop_playing = false;
     static sound_desc desc = {
         0,              // base_sound_id
         1.0f,           // amplitude
@@ -59,6 +60,38 @@ void imgui_sound_desc()
         Sleep(1000);
         delete[] buffer;
     }
+
+    ImGui::SameLine();
+    static int16_t* buffer = nullptr;
+    if (loop_playing)
+    {
+        if (ImGui::Button("Stop") && loop_playing)
+        {
+            synth_end_current_loop();
+            if (buffer)
+            {
+                delete[] buffer;
+                buffer = nullptr;
+            }
+            loop_playing = false;
+        }
+        else if (sound_desc_changed)
+        {
+            synth_update_generated_sound(buffer, &desc, 1);
+        }
+    }
+    else if (ImGui::Button("Play Sound Continuously"))
+    {
+        if (buffer)
+        {
+            synth_end_current_loop();
+            delete[] buffer;
+            buffer = nullptr;
+        }
+        buffer = synth_generate_sound(&desc, 1);
+        synth_queue_sound(buffer, static_cast<uint32_t>(-1));
+        loop_playing = true;
+    }
 }
 
 int main()
@@ -71,8 +104,8 @@ int main()
     settings.antialiasingLevel = 4;
     settings.majorVersion = 4;
     settings.minorVersion = 3;
-    // settings.attributeFlags = settings.Core;
     // imgui-sfml backend doesn't support modern GL backend, but disabling core allows old stuff
+    // settings.attributeFlags = settings.Core;
 #ifdef _DEBUG
     settings.attributeFlags |= settings.Debug;
 #endif
@@ -92,8 +125,6 @@ int main()
     // run the main loop
     bool running = true;
     sf::Vector3f clear_color;
-    ADSR adsr = { .001f, 0.001f, 1.0f, 0.95f };
-    synth_generate(adsr);
 
     while (running)
     {
@@ -129,44 +160,6 @@ int main()
             flags |= ImGuiWindowFlags_NoBackground;
             ImGui::Begin("Main", nullptr, flags);
 
-            if (ImGui::Button("Play"))
-            {
-                synth_play();
-            }
-            {
-                //ImGui::BeginChild("stuff", ImVec2(200.0f, 0.0f), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysUseWindowPadding);
-                //
-                //ImGui::Text("Envelope");                
-                //
-                //bool adsrChanged = false;
-                //adsrChanged |= ImGui::VSliderFloat("##attack", ImVec2(20.0f, 100.0f), &adsr.a, 0.0f, 1.0f);
-                //ImGui::SameLine();
-                //adsrChanged |= ImGui::VSliderFloat("##decay", ImVec2(20.0f, 100.0f), &adsr.d, 0.0f, 1.0f);
-                //ImGui::SameLine();
-                //adsrChanged |= ImGui::VSliderFloat("##sustain", ImVec2(20.0f, 100.0f), &adsr.s, 0.0f, 1.0f);
-                //ImGui::SameLine();
-                //adsrChanged |= ImGui::VSliderFloat("##release", ImVec2(20.0f, 100.0f), &adsr.r, 0.0f, 1.0f);
-                //
-                //if (adsrChanged)
-                //{
-                //    synth_generate(adsr);
-                //}
-                
-                //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-                //const float values[] = { 0.2f, 0.0f, 0.4f, 0.5f };
-                //ImVec2 mousePosRel;
-                //bool mouseDown;
-                //ImGui::PlotLines("Lines", values, 4, 0, "yadayada", 0.0f, 1.0f, ImVec2(0.0f, 100.0f), 4, &mousePosRel, &mouseDown);
-                //if (mouseDown)
-                //{
-                //    std::cout << mousePosRel.x << " " << mousePosRel.y << std::endl;
-                //}
-                //ImGui::PlotHistogram("Hist", values, 4, 0, "yadayada", 0.0f, 1.0f, ImVec2(0.0f, 100.0f));
-
-                //ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-                //ImGui::EndChild();
-            }
             {
                 ImGui::BeginChild("sound generator", ImVec2(800.0f, 800.0f), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysUseWindowPadding);
                 imgui_sound_desc();
