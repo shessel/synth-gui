@@ -5,57 +5,71 @@
 #include <imgui_internal.h>
 #include <imgui-SFML.h>
 
-#include <iostream>
+#include <vector>
 
 #include "synth.h"
 
 void imgui_sound_desc()
 {
     static bool loop_playing = false;
-    static sound_desc desc = {
-        0,              // base_sound_id
-        1.0f,           // amplitude
-        440.0f,         // frequency
-        0.0f,           // amplitude_min
-        30.0f,          // frequency_min
-        0,              // frequency_modifier_id
-        0,              // amplitude_modifier_id
-        { 0.0f, 1.0f }, // frequency_modifier_params
-        { 0.0f, 1.0f }, // amplitude_modifier_params
-    };
+    static std::vector<sound_desc> descs;
 
-    bool sound_desc_changed = false;
-    ImGui::Text("Wave Form");   
-    ImGui::SameLine();
-    sound_desc_changed |= ImGui::InputScalar("##base_sound_id", ImGuiDataType_U32, &desc.base_sound_id);
+    if (ImGui::Button("Add Desc"))
+    {
+        descs.emplace_back(sound_desc{
+            0,              // base_sound_id
+            1.0f,           // amplitude
+            440.0f,         // frequency
+            0.0f,           // amplitude_min
+            80.0f,          // frequency_min
+            0,              // frequency_modifier_id
+            0,              // amplitude_modifier_id
+            { 0.0f, 1.0f }, // frequency_modifier_params
+            { 0.0f, 1.0f }, // amplitude_modifier_params
+        });
+    }
 
-    ImGui::Text("Frequency");
-    ImGui::SameLine();
-    sound_desc_changed |= ImGui::InputFloat("##frequency", &desc.frequency);
-    ImGui::Text("Frequency Min");
-    ImGui::SameLine();
-    sound_desc_changed |= ImGui::InputFloat("##frequency_min", &desc.frequency_min);
-    int frequency_modifier_id = desc.frequency_modifier_id;
-    sound_desc_changed |= ImGui::InputInt("##frequency_modifier_id", &frequency_modifier_id);
-    desc.frequency_modifier_id = static_cast<uint8_t>(frequency_modifier_id);
-    sound_desc_changed |= ImGui::SliderFloat("##frequency_modifier_params.begin", &desc.frequency_modifier_params.begin, 0.0f, 1.0f);
-    sound_desc_changed |= ImGui::SliderFloat("##frequency_modifier_params.end", &desc.frequency_modifier_params.end, 0.0f, 1.0f);
+    bool any_sound_desc_changed = false;
+    for (size_t i = 0; i < descs.size(); ++i)
+    {
+        auto& desc = descs[i];
+        ImGui::PushID(static_cast<int>(i));
+        bool sound_desc_changed = false;
+        ImGui::Text("Wave Form");
+        ImGui::SameLine();
+        sound_desc_changed |= ImGui::InputScalar("##base_sound_id", ImGuiDataType_U32, &desc.base_sound_id);
 
-    ImGui::Text("Amplitude");
-    ImGui::SameLine();
-    sound_desc_changed |= ImGui::InputFloat("##amplitude", &desc.amplitude);
-    ImGui::Text("Amplitude Min");
-    ImGui::SameLine();
-    sound_desc_changed |= ImGui::InputFloat("##amplitude_min", &desc.amplitude_min);
-    int amplitude_modifier_id = desc.amplitude_modifier_id;
-    sound_desc_changed |= ImGui::InputInt("##amplitude_modifier_id", &amplitude_modifier_id);
-    desc.amplitude_modifier_id = static_cast<uint8_t>(amplitude_modifier_id);
-    sound_desc_changed |= ImGui::SliderFloat("##amplitude_modifier_params.begin", &desc.amplitude_modifier_params.begin, 0.0f, 1.0f);
-    sound_desc_changed |= ImGui::SliderFloat("##amplitude_modifier_params.end", &desc.amplitude_modifier_params.end, 0.0f, 1.0f);
+        ImGui::Text("Frequency");
+        ImGui::SameLine();
+        sound_desc_changed |= ImGui::InputFloat("##frequency", &desc.frequency);
+        ImGui::Text("Frequency Min");
+        ImGui::SameLine();
+        sound_desc_changed |= ImGui::InputFloat("##frequency_min", &desc.frequency_min);
+        int frequency_modifier_id = desc.frequency_modifier_id;
+        sound_desc_changed |= ImGui::InputInt("##frequency_modifier_id", &frequency_modifier_id);
+        desc.frequency_modifier_id = static_cast<uint8_t>(frequency_modifier_id);
+        sound_desc_changed |= ImGui::SliderFloat("##frequency_modifier_params.begin", &desc.frequency_modifier_params.begin, 0.0f, 1.0f);
+        sound_desc_changed |= ImGui::SliderFloat("##frequency_modifier_params.end", &desc.frequency_modifier_params.end, 0.0f, 1.0f);
+
+        ImGui::Text("Amplitude");
+        ImGui::SameLine();
+        sound_desc_changed |= ImGui::InputFloat("##amplitude", &desc.amplitude);
+        ImGui::Text("Amplitude Min");
+        ImGui::SameLine();
+        sound_desc_changed |= ImGui::InputFloat("##amplitude_min", &desc.amplitude_min);
+        int amplitude_modifier_id = desc.amplitude_modifier_id;
+        sound_desc_changed |= ImGui::InputInt("##amplitude_modifier_id", &amplitude_modifier_id);
+        desc.amplitude_modifier_id = static_cast<uint8_t>(amplitude_modifier_id);
+        sound_desc_changed |= ImGui::SliderFloat("##amplitude_modifier_params.begin", &desc.amplitude_modifier_params.begin, 0.0f, 1.0f);
+        sound_desc_changed |= ImGui::SliderFloat("##amplitude_modifier_params.end", &desc.amplitude_modifier_params.end, 0.0f, 1.0f);
+
+        any_sound_desc_changed |= sound_desc_changed;
+        ImGui::PopID();
+    }
     
     if (ImGui::Button("Play Sound"))
     {
-        int16_t* buffer = synth_generate_sound(&desc, 1);
+        int16_t* buffer = synth_generate_sound(descs.data(), static_cast<uint8_t>(descs.size()));
         synth_queue_sound(buffer);
         Sleep(1000);
         delete[] buffer;
@@ -75,9 +89,9 @@ void imgui_sound_desc()
             }
             loop_playing = false;
         }
-        else if (sound_desc_changed)
+        else if (any_sound_desc_changed)
         {
-            synth_update_generated_sound(buffer, &desc, 1);
+            synth_update_generated_sound(buffer, descs.data(), static_cast<uint8_t>(descs.size()));
         }
     }
     else if (ImGui::Button("Play Sound Continuously"))
@@ -88,7 +102,7 @@ void imgui_sound_desc()
             delete[] buffer;
             buffer = nullptr;
         }
-        buffer = synth_generate_sound(&desc, 1);
+        buffer = synth_generate_sound(descs.data(), static_cast<uint8_t>(descs.size()));
         synth_queue_sound(buffer, static_cast<uint32_t>(-1));
         loop_playing = true;
     }
