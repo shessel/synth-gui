@@ -9,11 +9,22 @@
 
 #include "synth.h"
 
+static std::vector<sound_desc> descs;
+
+void play_sound(int semitone)
+{
+    if (!descs.empty())
+    {
+        descs[0].frequency = 220.0f * std::powf(1.0594631f, static_cast<float>(semitone));
+        int16_t* buffer = synth_generate_sound(descs.data(), static_cast<uint8_t>(descs.size()));
+        synth_queue_sound(buffer);
+        Sleep(500);
+        delete[] buffer;
+    }
+}
+
 void imgui_sound_desc()
 {
-    static bool loop_playing = false;
-    static std::vector<sound_desc> descs;
-
     if (ImGui::Button("Add Desc"))
     {
         if (descs.empty())
@@ -73,46 +84,6 @@ void imgui_sound_desc()
         any_sound_desc_changed |= sound_desc_changed;
         ImGui::PopID();
     }
-    
-    if (ImGui::Button("Play Sound"))
-    {
-        int16_t* buffer = synth_generate_sound(descs.data(), static_cast<uint8_t>(descs.size()));
-        synth_queue_sound(buffer);
-        Sleep(1000);
-        delete[] buffer;
-    }
-
-    ImGui::SameLine();
-    static int16_t* buffer = nullptr;
-    if (loop_playing)
-    {
-        if (ImGui::Button("Stop") && loop_playing)
-        {
-            synth_end_current_loop();
-            if (buffer)
-            {
-                delete[] buffer;
-                buffer = nullptr;
-            }
-            loop_playing = false;
-        }
-        else if (any_sound_desc_changed)
-        {
-            synth_update_generated_sound(buffer, descs.data(), static_cast<uint8_t>(descs.size()));
-        }
-    }
-    else if (ImGui::Button("Play Sound Continuously"))
-    {
-        if (buffer)
-        {
-            synth_end_current_loop();
-            delete[] buffer;
-            buffer = nullptr;
-        }
-        buffer = synth_generate_sound(descs.data(), static_cast<uint8_t>(descs.size()));
-        synth_queue_sound(buffer, static_cast<uint32_t>(-1));
-        loop_playing = true;
-    }
 }
 
 int main()
@@ -166,6 +137,71 @@ int main()
                 windowWidth = event.size.width;
                 windowHeight = event.size.height;
                 glViewport(0, 0, event.size.width, event.size.height);
+            }
+            else if (event.type == sf::Event::KeyPressed)
+            {
+                bool play = true;
+                int semitoneOffset = 0;
+                switch (event.key.code)
+                {
+                case sf::Keyboard::Z:
+                    semitoneOffset = 0;
+                    break;
+                case sf::Keyboard::S:
+                    semitoneOffset = 1;
+                    break;
+                case sf::Keyboard::X:
+                    semitoneOffset = 2;
+                    break;
+                case sf::Keyboard::D:
+                    semitoneOffset = 3;
+                    break;
+                case sf::Keyboard::C:
+                    semitoneOffset = 4;
+                    break;
+                case sf::Keyboard::V:
+                    semitoneOffset = 5;
+                    break;
+                case sf::Keyboard::G:
+                    semitoneOffset = 6;
+                    break;
+                case sf::Keyboard::B:
+                    semitoneOffset = 7;
+                    break;
+                case sf::Keyboard::H:
+                    semitoneOffset = 8;
+                    break;
+                case sf::Keyboard::N:
+                    semitoneOffset = 9;
+                    break;
+                case sf::Keyboard::J:
+                    semitoneOffset = 10;
+                    break;
+                case sf::Keyboard::M:
+                    semitoneOffset = 11;
+                    break;
+                case sf::Keyboard::Comma:
+                    semitoneOffset = 12;
+                    break;
+                case sf::Keyboard::L:
+                    semitoneOffset = 13;
+                    break;
+                case sf::Keyboard::Period:
+                    semitoneOffset = 14;
+                    break;
+                case sf::Keyboard::SemiColon:
+                    semitoneOffset = 15;
+                    break;
+                case sf::Keyboard::Slash:
+                    semitoneOffset = 16;
+                    break;
+                default:
+                    play = false;
+                }
+                if (play)
+                {
+                    play_sound(semitoneOffset);
+                }
             }
         }
        
