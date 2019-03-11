@@ -5,15 +5,13 @@ find_package(SFML 2.5 REQUIRED COMPONENTS graphics)
 
 set(SOURCE_FILES
 		main.cpp
-		synth.cpp
 	)
 
 set(HEADER_FILES
-		synth.h
 	)
 
 add_executable(sfml-synth ${SOURCE_FILES} ${HEADER_FILES})
-target_link_libraries(sfml-synth sfml-graphics imgui imgui-sfml Winmm.lib)
+target_link_libraries(sfml-synth sfml-graphics synth imgui imgui-sfml Winmm.lib)
 target_include_directories(sfml-synth PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(sfml-synth PUBLIC cxx_std_17)
 

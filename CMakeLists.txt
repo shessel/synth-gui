@@ -4,4 +4,5 @@ project(sfml-synth LANGUAGES CXX)
 
 add_subdirectory(imgui)
 add_subdirectory(imgui-sfml)
+add_subdirectory(synth)
 add_subdirectory(src)
